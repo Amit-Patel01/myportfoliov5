@@ -1,0 +1,103 @@
+{
+  "items": [
+    {
+      "id": "p1",
+      "type": "project",
+      "title": "PhotoFrame Hub",
+      "description": "A creative photo frame web application that lets users customize and download personalized frames for their photos using HTML5 Canvas API.",
+      "image": "https://images.unsplash.com/photo-1551650975-87deedd944b3?w=800&auto=format&fit=crop",
+      "tags": ["HTML", "CSS", "JavaScript", "Canvas API"],
+      "link": "https://photoframehub.github.io/Photoframe/",
+      "github": "",
+      "featured": true,
+      "color": "from-blue-500 to-indigo-600"
+    },
+    {
+      "id": "p2",
+      "type": "project",
+      "title": "Auto Garage Website",
+      "description": "A full-featured auto garage service website with appointment booking, service listings, contact info, and a responsive design for all devices.",
+      "image": "https://images.unsplash.com/photo-1554214933-00e945f42bd9?w=800&auto=format&fit=crop",
+      "tags": ["PHP", "MySQL", "Bootstrap", "Responsive"],
+      "link": "https://shreemahakaliautogarage.free.nf",
+      "github": "",
+      "featured": true,
+      "color": "from-emerald-500 to-teal-600"
+    },
+    {
+      "id": "p3",
+      "type": "project",
+      "title": "AmitSolutionHub Platform",
+      "description": "A technical services platform offering web development, UI design, PC repair, and video editing services for individuals and small businesses.",
+      "image": "https://images.unsplash.com/photo-1460925895917-afdab827c52f?w=800&auto=format&fit=crop",
+      "tags": ["React", "Node.js", "Tailwind CSS", "Express"],
+      "link": "#",
+      "github": "",
+      "featured": false,
+      "color": "from-violet-500 to-purple-600"
+    },
+    {
+      "id": "u1",
+      "type": "uiux",
+      "title": "E-Commerce App Design",
+      "description": "Modern dark-themed mobile e-commerce interface with custom wireframes, interactive prototype, and design design system in Figma.",
+      "image": "https://images.unsplash.com/photo-1581291518633-83b4ebd1d83e?w=800&auto=format&fit=crop",
+      "tags": ["Figma", "UI/UX", "Mobile Design", "Prototyping"],
+      "link": "https://www.figma.com",
+      "github": "",
+      "featured": true,
+      "color": "from-purple-500 to-pink-600"
+    },
+    {
+      "id": "v1",
+      "type": "video",
+      "title": "Cinematic Brand Commercial",
+      "description": "High-energy commercial edit created with Adobe Premiere Pro & After Effects including sound design and motion graphics.",
+      "image": "https://images.unsplash.com/photo-1574717024653-61fd2cf4d44d?w=800&auto=format&fit=crop",
+      "tags": ["Premiere Pro", "After Effects", "Motion Graphics", "Video Editing"],
+      "link": "https://youtube.com/@amitpatel-uc7up",
+      "github": "",
+      "featured": true,
+      "color": "from-red-500 to-amber-600"
+    },
+    {
+      "id": "c1",
+      "type": "certificate",
+      "title": "Responsive Web Design",
+      "description": "Earned from freeCodeCamp after completing 300+ hours of coursework covering HTML, CSS, Flexbox, Grid, and responsive design principles.",
+      "image": "https://images.unsplash.com/photo-1547658719-da2b51169166?w=800&auto=format&fit=crop",
+      "tags": ["HTML", "CSS", "Responsive", "freeCodeCamp"],
+      "link": "https://www.freecodecamp.org/",
+      "issuer": "freeCodeCamp",
+      "date": "2023",
+      "featured": true,
+      "color": "from-pink-500 to-rose-600"
+    },
+    {
+      "id": "c2",
+      "type": "certificate",
+      "title": "JavaScript Algorithms & Data Structures",
+      "description": "Completed 300+ hours of JavaScript fundamentals, ES6+, algorithms, data structures, and object-oriented programming.",
+      "image": "https://images.unsplash.com/photo-1555066931-4365d14bab8c?w=800&auto=format&fit=crop",
+      "tags": ["JavaScript", "Algorithms", "ES6+", "freeCodeCamp"],
+      "link": "https://www.freecodecamp.org/",
+      "issuer": "freeCodeCamp",
+      "date": "2023",
+      "featured": false,
+      "color": "from-amber-500 to-orange-500"
+    },
+    {
+      "id": "c3",
+      "type": "certificate",
+      "title": "React — The Complete Guide",
+      "description": "Mastered React 18 including Hooks, Context API, Redux, Next.js, and testing with 40+ hours of project-based learning.",
+      "image": "https://images.unsplash.com/photo-1633356122544-f134324a6cee?w=800&auto=format&fit=crop",
+      "tags": ["React", "Redux", "Hooks", "Udemy"],
+      "link": "https://www.udemy.com/",
+      "issuer": "Udemy",
+      "date": "2024",
+      "featured": true,
+      "color": "from-cyan-500 to-blue-600"
+    }
+  ]
+}
