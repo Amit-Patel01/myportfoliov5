@@ -70,13 +70,13 @@ export const PortfolioProvider = ({ children }) => {
     } catch (e) {
       console.error('Failed to update item:', e)
     }
-    setItems(prev => prev.map(i => i.id === id ? { ...i, ...updates } : i))
+    setItems(prev => prev.map(i => (i.id === id || i._id === id) ? { ...i, ...updates } : i))
     return { id, ...updates }
   }
 
   const deleteItem = async (id) => {
     try {
-      const res = await fetch(`/api/portfolio?id=${id}`, { method: 'DELETE' })
+      const res = await fetch(`/api/portfolio?id=${encodeURIComponent(id)}`, { method: 'DELETE' })
       const data = await res.json()
       if (res.ok && data.items) {
         setItems(data.items)
@@ -85,7 +85,7 @@ export const PortfolioProvider = ({ children }) => {
     } catch (e) {
       console.error('Failed to delete item:', e)
     }
-    setItems(prev => prev.filter(i => i.id !== id))
+    setItems(prev => prev.filter(i => i.id !== id && i._id !== id))
   }
 
   const deleteAllItems = async () => {

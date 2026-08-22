@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server'
+import mongoose from 'mongoose'
 import initialPortfolioData from '../../../data/portfolio.json'
 import { connectToDatabase } from '../../../lib/mongodb'
 import Project from '../../../models/Project'
@@ -19,6 +20,26 @@ function getModelByType(type) {
   return Project
 }
 
+// Normalize items so they always have both `id` and `_id` as string
+function normalizeItem(doc) {
+  if (!doc) return doc
+  const idStr = doc.id || (doc._id ? doc._id.toString() : 'item_' + Date.now())
+  return {
+    ...doc,
+    _id: doc._id ? doc._id.toString() : idStr,
+    id: idStr,
+  }
+}
+
+// Build query to match custom string `id` or MongoDB `_id`
+function buildIdQuery(id) {
+  const conditions = [{ id: id }, { _id: id }]
+  if (mongoose.Types.ObjectId.isValid(id)) {
+    conditions.push({ _id: new mongoose.Types.ObjectId(id) })
+  }
+  return { $or: conditions }
+}
+
 // Fetch all items from separate collections
 async function getAllMongoItems() {
   await connectToDatabase()
@@ -32,11 +53,11 @@ async function getAllMongoItems() {
   ])
 
   let combined = [
-    ...projects.map(p => ({ ...p, type: 'project' })),
-    ...certs.map(c => ({ ...c, type: 'certificate' })),
-    ...uiuxs.map(u => ({ ...u, type: 'uiux' })),
-    ...videos.map(v => ({ ...v, type: 'video' })),
-    ...legacy,
+    ...projects.map(p => normalizeItem({ ...p, type: p.type || 'project' })),
+    ...certs.map(c => normalizeItem({ ...c, type: c.type || 'certificate' })),
+    ...uiuxs.map(u => normalizeItem({ ...u, type: u.type || 'uiux' })),
+    ...videos.map(v => normalizeItem({ ...v, type: v.type || 'video' })),
+    ...legacy.map(l => normalizeItem(l)),
   ]
 
   // Auto-seed into separate collections if completely empty
@@ -53,10 +74,10 @@ async function getAllMongoItems() {
       Video.find({}).lean(),
     ])
     combined = [
-      ...p2.map(p => ({ ...p, type: 'project' })),
-      ...c2.map(c => ({ ...c, type: 'certificate' })),
-      ...u2.map(u => ({ ...u, type: 'uiux' })),
-      ...v2.map(v => ({ ...v, type: 'video' })),
+      ...p2.map(p => normalizeItem({ ...p, type: p.type || 'project' })),
+      ...c2.map(c => normalizeItem({ ...c, type: c.type || 'certificate' })),
+      ...u2.map(u => normalizeItem({ ...u, type: u.type || 'uiux' })),
+      ...v2.map(v => normalizeItem({ ...v, type: v.type || 'video' })),
     ]
   }
 
@@ -109,7 +130,7 @@ export async function POST(request) {
         success: true,
         source: 'mongodb',
         message: `Saved to separate collection '${Model.collection.name}' in MongoDB`,
-        item: created,
+        item: normalizeItem(created.toObject ? created.toObject() : created),
         items: allItems,
       }, { status: 201 })
     } catch (dbErr) {
@@ -139,16 +160,41 @@ export async function PUT(request) {
 
     try {
       await connectToDatabase()
-      const Model = getModelByType(updates.type)
-      
-      // Try updating across separate collections
-      let updated = await Model.findOneAndUpdate({ id }, updates, { new: true }).lean()
-      if (!updated) {
-        // Fallback search across all models
-        for (const M of [Project, Certificate, UIUX, Video, PortfolioItem]) {
-          updated = await M.findOneAndUpdate({ id }, updates, { new: true }).lean()
-          if (updated) break
+      const query = buildIdQuery(id)
+      const TargetModel = getModelByType(updates.type)
+
+      // Search for the existing document across all models
+      let existingDoc = null
+      let FoundModel = null
+
+      for (const M of [Project, Certificate, UIUX, Video, PortfolioItem]) {
+        const found = await M.findOne(query).lean()
+        if (found) {
+          existingDoc = found
+          FoundModel = M
+          break
         }
+      }
+
+      let updated = null
+      if (existingDoc && FoundModel) {
+        if (TargetModel !== FoundModel) {
+          // If type changed collection, delete old and create in target collection
+          await FoundModel.deleteOne(query)
+          const newDoc = {
+            ...existingDoc,
+            ...updates,
+            id: existingDoc.id || id,
+          }
+          delete newDoc._id
+          updated = await TargetModel.create(newDoc)
+        } else {
+          // Update in existing model
+          updated = await FoundModel.findOneAndUpdate(query, updates, { new: true }).lean()
+        }
+      } else {
+        // Fallback create
+        updated = await TargetModel.create({ ...updates, id }).catch(() => null)
       }
 
       const allItems = await getAllMongoItems()
@@ -156,12 +202,12 @@ export async function PUT(request) {
         success: true,
         source: 'mongodb',
         message: 'Item updated in MongoDB',
-        item: updated,
+        item: normalizeItem(updated),
         items: allItems,
       })
     } catch (dbErr) {
       console.warn('MongoDB PUT fallback to memory:', dbErr.message)
-      const index = fallbackMemoryItems.findIndex(i => i.id === id)
+      const index = fallbackMemoryItems.findIndex(i => i.id === id || i._id === id)
       if (index !== -1) {
         fallbackMemoryItems[index] = { ...fallbackMemoryItems[index], ...updates }
       }
@@ -205,13 +251,15 @@ export async function DELETE(request) {
         return NextResponse.json({ success: false, error: 'Item ID is required' }, { status: 400 })
       }
 
-      // Delete across all collections
+      const query = buildIdQuery(id)
+
+      // Delete across all collections matching either id or _id
       await Promise.all([
-        Project.deleteOne({ id }),
-        Certificate.deleteOne({ id }),
-        UIUX.deleteOne({ id }),
-        Video.deleteOne({ id }),
-        PortfolioItem.deleteOne({ id }),
+        Project.deleteOne(query),
+        Certificate.deleteOne(query),
+        UIUX.deleteOne(query),
+        Video.deleteOne(query),
+        PortfolioItem.deleteOne(query),
       ])
 
       const allItems = await getAllMongoItems()
@@ -226,7 +274,7 @@ export async function DELETE(request) {
       if (all === 'true' || id === 'all') {
         fallbackMemoryItems = []
       } else if (id) {
-        fallbackMemoryItems = fallbackMemoryItems.filter(i => i.id !== id)
+        fallbackMemoryItems = fallbackMemoryItems.filter(i => i.id !== id && i._id !== id)
       }
       return NextResponse.json({
         success: true,
@@ -239,3 +287,4 @@ export async function DELETE(request) {
     return NextResponse.json({ success: false, error: error.message }, { status: 400 })
   }
 }
+

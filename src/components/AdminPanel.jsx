@@ -238,42 +238,45 @@ const ItemForm = ({ initial, onSave, onClose, saving }) => {
 }
 
 /* Item Row */
-const ItemRow = ({ item, onEdit, onDelete }) => (
-  <div className="flex items-center gap-4 p-4 rounded-xl glass-card">
-    <div className="w-14 h-14 rounded-lg overflow-hidden shrink-0 bg-slate-900">
-      <img
-        src={item.image || 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=200'}
-        alt={item.title}
-        className="w-full h-full object-cover"
-      />
-    </div>
-
-    <div className="flex-1 min-w-0">
-      <div className="flex items-center gap-2">
-        <span className="text-[10px] font-semibold uppercase px-2 py-0.5 rounded-md bg-slate-800 text-cyan-400 border border-slate-700">
-          {item.type}
-        </span>
+const ItemRow = ({ item, onEdit, onDelete }) => {
+  const id = item.id || item._id
+  return (
+    <div className="flex items-center gap-4 p-4 rounded-xl glass-card">
+      <div className="w-14 h-14 rounded-lg overflow-hidden shrink-0 bg-slate-900">
+        <img
+          src={item.image || 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=200'}
+          alt={item.title}
+          className="w-full h-full object-cover"
+        />
       </div>
-      <p className="font-bold text-sm text-white truncate mt-1">{item.title}</p>
-      <p className="text-xs text-slate-400 truncate">{item.description}</p>
-    </div>
 
-    <div className="flex items-center gap-2 shrink-0">
-      <button
-        onClick={() => onEdit(item)}
-        className="p-2 rounded-lg bg-slate-800 text-slate-300 hover:text-white transition-colors"
-      >
-        <Pencil size={15} />
-      </button>
-      <button
-        onClick={() => onDelete(item.id)}
-        className="p-2 rounded-lg bg-red-950/60 border border-red-800/40 text-red-400 hover:text-red-300 transition-colors"
-      >
-        <Trash2 size={15} />
-      </button>
+      <div className="flex-1 min-w-0">
+        <div className="flex items-center gap-2">
+          <span className="text-[10px] font-semibold uppercase px-2 py-0.5 rounded-md bg-slate-800 text-cyan-400 border border-slate-700">
+            {item.type}
+          </span>
+        </div>
+        <p className="font-bold text-sm text-white truncate mt-1">{item.title}</p>
+        <p className="text-xs text-slate-400 truncate">{item.description}</p>
+      </div>
+
+      <div className="flex items-center gap-2 shrink-0">
+        <button
+          onClick={() => onEdit(item)}
+          className="p-2 rounded-lg bg-slate-800 text-slate-300 hover:text-white transition-colors"
+        >
+          <Pencil size={15} />
+        </button>
+        <button
+          onClick={() => onDelete(id)}
+          className="p-2 rounded-lg bg-red-950/60 border border-red-800/40 text-red-400 hover:text-red-300 transition-colors"
+        >
+          <Trash2 size={15} />
+        </button>
+      </div>
     </div>
-  </div>
-)
+  )
+}
 
 /* Main Admin Dashboard */
 const AdminPanel = () => {
@@ -309,14 +312,17 @@ const AdminPanel = () => {
       i.description.toLowerCase().includes(search.toLowerCase())
     )
 
+  const getItemId = (item) => item?.id || item?._id
+
   const openAdd = () => { setEditItem(null); setFormOpen(true) }
-  const openEdit = (item) => { setEditItem(item); setFormOpen(true) }
+  const openEdit = (item) => { setEditItem({ ...item, id: getItemId(item) }); setFormOpen(true) }
   const close = () => { setFormOpen(false); setEditItem(null) }
 
   const handleSave = async (data) => {
     setSaving(true)
     try {
-      if (editItem) { await updateItem(editItem.id, data); toast.success('Saved to MongoDB!') }
+      const targetId = editItem ? getItemId(editItem) : null
+      if (targetId) { await updateItem(targetId, data); toast.success('Saved to MongoDB!') }
       else { await addItem(data); toast.success('Added to MongoDB!') }
       close()
     } catch { toast.error('Something went wrong with MongoDB.') }
@@ -324,6 +330,10 @@ const AdminPanel = () => {
   }
 
   const handleDelete = async (id) => {
+    if (!id) {
+      toast.error('Item ID missing.')
+      return
+    }
     if (!window.confirm('Delete this item from MongoDB?')) return
     try { await deleteItem(id); toast.success('Deleted from MongoDB.') }
     catch { toast.error('Could not delete.') }
@@ -420,7 +430,7 @@ const AdminPanel = () => {
           )}
 
           {!loading && filtered.map(item => (
-            <ItemRow key={item.id} item={item} onEdit={openEdit} onDelete={handleDelete} />
+            <ItemRow key={item.id || item._id} item={item} onEdit={openEdit} onDelete={handleDelete} />
           ))}
         </div>
       </main>
