@@ -1,6 +1,5 @@
 import { NextResponse } from 'next/server'
 import mongoose from 'mongoose'
-import initialPortfolioData from '../../../data/portfolio.json'
 import { connectToDatabase } from '../../../lib/mongodb'
 import Project from '../../../models/Project'
 import Certificate from '../../../models/Certificate'
@@ -9,8 +8,6 @@ import Video from '../../../models/Video'
 import PortfolioItem from '../../../models/PortfolioItem'
 
 export const dynamic = 'force-dynamic'
-
-let fallbackMemoryItems = [...(initialPortfolioData.items || [])]
 
 // Helper to select model by item type
 function getModelByType(type) {
@@ -60,27 +57,6 @@ async function getAllMongoItems() {
     ...legacy.map(l => normalizeItem(l)),
   ]
 
-  // Auto-seed into separate collections if completely empty
-  if (combined.length === 0) {
-    const defaults = initialPortfolioData.items || []
-    for (const item of defaults) {
-      const Model = getModelByType(item.type)
-      await Model.create(item).catch(() => {})
-    }
-    const [p2, c2, u2, v2] = await Promise.all([
-      Project.find({}).lean(),
-      Certificate.find({}).lean(),
-      UIUX.find({}).lean(),
-      Video.find({}).lean(),
-    ])
-    combined = [
-      ...p2.map(p => normalizeItem({ ...p, type: p.type || 'project' })),
-      ...c2.map(c => normalizeItem({ ...c, type: c.type || 'certificate' })),
-      ...u2.map(u => normalizeItem({ ...u, type: u.type || 'uiux' })),
-      ...v2.map(v => normalizeItem({ ...v, type: v.type || 'video' })),
-    ]
-  }
-
   return combined
 }
 
@@ -93,12 +69,8 @@ export async function GET() {
       items,
     })
   } catch (error) {
-    console.warn('MongoDB GET fallback to memory:', error.message)
-    return NextResponse.json({
-      success: true,
-      source: 'memory',
-      items: fallbackMemoryItems,
-    })
+    console.error('MongoDB GET failed:', error.message)
+    return NextResponse.json({ success: false, source: 'mongodb', error: 'MongoDB connection failed.' }, { status: 503 })
   }
 }
 
@@ -111,9 +83,9 @@ export async function POST(request) {
       type: itemType,
       title: body.title || 'Untitled',
       description: body.description || '',
-      image: body.image || 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=800',
+      image: body.image || '',
       tags: Array.isArray(body.tags) ? body.tags : (body.tags ? body.tags.split(',').map(t => t.trim()) : []),
-      link: body.link || '#',
+      link: body.link || '',
       github: body.github || '',
       issuer: body.issuer || '',
       date: body.date || '',
@@ -134,15 +106,8 @@ export async function POST(request) {
         items: allItems,
       }, { status: 201 })
     } catch (dbErr) {
-      console.warn('MongoDB POST fallback to memory:', dbErr.message)
-      fallbackMemoryItems.unshift(newItem)
-      return NextResponse.json({
-        success: true,
-        source: 'memory',
-        message: 'Saved to memory',
-        item: newItem,
-        items: fallbackMemoryItems,
-      }, { status: 201 })
+      console.error('MongoDB POST failed:', dbErr.message)
+      return NextResponse.json({ success: false, source: 'mongodb', error: 'MongoDB connection failed.' }, { status: 503 })
     }
   } catch (error) {
     return NextResponse.json({ success: false, error: error.message }, { status: 400 })
@@ -206,17 +171,8 @@ export async function PUT(request) {
         items: allItems,
       })
     } catch (dbErr) {
-      console.warn('MongoDB PUT fallback to memory:', dbErr.message)
-      const index = fallbackMemoryItems.findIndex(i => i.id === id || i._id === id)
-      if (index !== -1) {
-        fallbackMemoryItems[index] = { ...fallbackMemoryItems[index], ...updates }
-      }
-      return NextResponse.json({
-        success: true,
-        source: 'memory',
-        message: 'Item updated in memory',
-        items: fallbackMemoryItems,
-      })
+      console.error('MongoDB PUT failed:', dbErr.message)
+      return NextResponse.json({ success: false, source: 'mongodb', error: 'MongoDB connection failed.' }, { status: 503 })
     }
   } catch (error) {
     return NextResponse.json({ success: false, error: error.message }, { status: 400 })
@@ -270,18 +226,8 @@ export async function DELETE(request) {
         items: allItems,
       })
     } catch (dbErr) {
-      console.warn('MongoDB DELETE fallback to memory:', dbErr.message)
-      if (all === 'true' || id === 'all') {
-        fallbackMemoryItems = []
-      } else if (id) {
-        fallbackMemoryItems = fallbackMemoryItems.filter(i => i.id !== id && i._id !== id)
-      }
-      return NextResponse.json({
-        success: true,
-        source: 'memory',
-        message: 'Deleted from memory',
-        items: fallbackMemoryItems,
-      })
+      console.error('MongoDB DELETE failed:', dbErr.message)
+      return NextResponse.json({ success: false, source: 'mongodb', error: 'MongoDB connection failed.' }, { status: 503 })
     }
   } catch (error) {
     return NextResponse.json({ success: false, error: error.message }, { status: 400 })

@@ -1,7 +1,6 @@
 'use client'
 
 import { createContext, useContext, useState, useEffect, useCallback } from 'react'
-import portfolioData from '../data/portfolio.json'
 
 const PortfolioContext = createContext()
 
@@ -11,23 +10,20 @@ export const PortfolioProvider = ({ children }) => {
   const [error, setError] = useState(null)
 
   const fetchItems = useCallback(async () => {
+    setLoading(true)
     try {
       const apiRes = await fetch('/api/portfolio')
-      if (apiRes.ok) {
-        const data = await apiRes.json()
-        if (data.items && data.items.length > 0) {
-          setItems(data.items)
-          setError(null)
-          setLoading(false)
-          return
-        }
+      const data = await apiRes.json()
+      if (!apiRes.ok || !data.success) {
+        throw new Error(data.error || 'Unable to load portfolio items.')
       }
+      setItems(data.items || [])
+      setError(null)
     } catch (err) {
-      console.warn("API fetch error, fallback to static:", err)
+      console.error('MongoDB fetch error:', err)
+      setItems([])
+      setError(err.message)
     }
-
-    setItems(portfolioData.items || [])
-    setError(null)
     setLoading(false)
   }, [])
 
@@ -43,16 +39,15 @@ export const PortfolioProvider = ({ children }) => {
         body: JSON.stringify(item),
       })
       const data = await res.json()
-      if (res.ok && data.items) {
+      if (res.ok && data.success && data.items) {
         setItems(data.items)
         return data.item
       }
+      throw new Error(data.error || 'Unable to add item.')
     } catch (e) {
       console.error('Failed to add item:', e)
+      throw e
     }
-    const newItem = { ...item, id: 'item_' + Date.now() }
-    setItems(prev => [newItem, ...prev])
-    return newItem
   }
 
   const updateItem = async (id, updates) => {
@@ -63,43 +58,45 @@ export const PortfolioProvider = ({ children }) => {
         body: JSON.stringify({ id, ...updates }),
       })
       const data = await res.json()
-      if (res.ok && data.items) {
+      if (res.ok && data.success && data.items) {
         setItems(data.items)
         return data.item
       }
+      throw new Error(data.error || 'Unable to update item.')
     } catch (e) {
       console.error('Failed to update item:', e)
+      throw e
     }
-    setItems(prev => prev.map(i => (i.id === id || i._id === id) ? { ...i, ...updates } : i))
-    return { id, ...updates }
   }
 
   const deleteItem = async (id) => {
     try {
       const res = await fetch(`/api/portfolio?id=${encodeURIComponent(id)}`, { method: 'DELETE' })
       const data = await res.json()
-      if (res.ok && data.items) {
+      if (res.ok && data.success && data.items) {
         setItems(data.items)
         return
       }
+      throw new Error(data.error || 'Unable to delete item.')
     } catch (e) {
       console.error('Failed to delete item:', e)
+      throw e
     }
-    setItems(prev => prev.filter(i => i.id !== id && i._id !== id))
   }
 
   const deleteAllItems = async () => {
     try {
       const res = await fetch('/api/portfolio?all=true', { method: 'DELETE' })
       const data = await res.json()
-      if (res.ok && data.items) {
+      if (res.ok && data.success && data.items) {
         setItems(data.items)
         return
       }
+      throw new Error(data.error || 'Unable to delete items.')
     } catch (e) {
       console.error('Failed to delete all items:', e)
+      throw e
     }
-    setItems([])
   }
 
   return (

@@ -24,6 +24,29 @@ const EMPTY = {
   link: '', github: '', issuer: '', date: '', tags: '', featured: false,
 }
 
+const LINK_FIELD = {
+  project: {
+    label: 'Live demo link',
+    placeholder: 'https://your-project.com',
+    helper: 'Add the live project URL here.',
+  },
+  uiux: {
+    label: 'Prototype link',
+    placeholder: 'https://figma.com/...',
+    helper: 'Add the Figma, Behance, or prototype URL here.',
+  },
+  certificate: {
+    label: 'Certificate file or verification link',
+    placeholder: '/uploads/certificates/certificate.pdf',
+    helper: 'Upload the PDF to public/uploads/certificates, then paste its path here. External verification links also work.',
+  },
+  video: {
+    label: 'Video file or watch link',
+    placeholder: '/uploads/videos/video.mp4',
+    helper: 'Upload the video to public/uploads/videos, then paste its path here. YouTube, Drive, and other watch links also work.',
+  },
+}
+
 /* Login Screen */
 const LoginScreen = ({ onLogin }) => {
   const [password, setPassword] = useState('')
@@ -122,6 +145,7 @@ const ItemForm = ({ initial, onSave, onClose, saving }) => {
       : EMPTY
   )
   const isEdit = !!initial
+  const linkField = LINK_FIELD[form.type] || LINK_FIELD.project
 
   const set = e => {
     const { name, value, type, checked } = e.target
@@ -191,14 +215,16 @@ const ItemForm = ({ initial, onSave, onClose, saving }) => {
           </div>
 
           <div>
-            <label className="block text-xs font-semibold text-slate-300 mb-1">Image URL</label>
-            <input name="image" value={form.image} onChange={set} placeholder="https://..." className={INP} />
+            <label className="block text-xs font-semibold text-slate-300 mb-1">Thumbnail / cover image</label>
+            <input name="image" value={form.image} onChange={set} placeholder="/uploads/thumbnails/cover.jpg or https://..." className={INP} />
+            <p className="mt-1 text-[11px] leading-relaxed text-slate-500">For local cover images, upload to public/uploads/thumbnails and use the path starting with /uploads/.</p>
           </div>
 
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="block text-xs font-semibold text-slate-300 mb-1">Live Link / Demo / Video</label>
-              <input name="link" value={form.link} onChange={set} placeholder="https://..." className={INP} />
+              <label className="block text-xs font-semibold text-slate-300 mb-1">{linkField.label}</label>
+              <input name="link" value={form.link} onChange={set} placeholder={linkField.placeholder} className={INP} />
+              <p className="mt-1 text-[11px] leading-relaxed text-slate-500">{linkField.helper}</p>
             </div>
             {form.type === 'project' ? (
               <div>
@@ -229,7 +255,7 @@ const ItemForm = ({ initial, onSave, onClose, saving }) => {
             className="w-full py-3 rounded-xl text-sm font-semibold text-white bg-cyan-600 hover:bg-cyan-500 transition-colors flex items-center justify-center gap-2 disabled:opacity-50"
           >
             {saving ? <Loader2 size={16} className="animate-spin" /> : <Save size={16} />}
-            <span>{isEdit ? 'Save to MongoDB' : 'Add to MongoDB'}</span>
+            <span>{isEdit ? 'Save links & details to MongoDB' : 'Add links & details to MongoDB'}</span>
           </button>
         </form>
       </div>
@@ -288,7 +314,7 @@ const AdminPanel = () => {
     }
   }, [])
 
-  const { items, loading, error, addItem, updateItem, deleteItem, deleteAllItems } = usePortfolio()
+  const { items, loading, error, addItem, updateItem, deleteItem } = usePortfolio()
   const [filter, setFilter] = useState('all')
   const [search, setSearch] = useState('')
   const [formOpen, setFormOpen] = useState(false)
@@ -380,6 +406,21 @@ const AdminPanel = () => {
           <Stat label="Video Edits" value={items.filter(i => i.type === 'video').length} icon={Film} color="bg-rose-600" />
           <Stat label="Certificates" value={items.filter(i => i.type === 'certificate').length} icon={Award} color="bg-amber-600" />
         </div>
+
+        <div className="rounded-xl border border-cyan-900/60 bg-cyan-950/20 px-4 py-3 text-xs leading-relaxed text-slate-300">
+          <span className="font-semibold text-cyan-300">Local uploads:</span>{' '}
+          certificates → <code className="text-cyan-200">public/uploads/certificates</code>, videos → <code className="text-cyan-200">public/uploads/videos</code>, covers → <code className="text-cyan-200">public/uploads/thumbnails</code>.
+          {' '}After uploading, add each file path or external URL from the item form below.
+        </div>
+
+        {error && (
+          <div className="flex items-center justify-between gap-4 rounded-xl border border-red-800/60 bg-red-950/40 px-4 py-3 text-sm text-red-200">
+            <span>MongoDB unavailable: {error}</span>
+            <button onClick={() => window.location.reload()} className="shrink-0 font-semibold text-red-100 underline hover:text-white">
+              Retry
+            </button>
+          </div>
+        )}
 
         {/* Filter and Search */}
         <div className="flex flex-col sm:flex-row items-center justify-between gap-3">
