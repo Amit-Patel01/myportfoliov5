@@ -1,8 +1,10 @@
 'use client'
 
-import { ExternalLink, Github, Award, Palette, Film, Trash2 } from 'lucide-react'
+import { ExternalLink, Github, Award, Palette, Film, Trash2, Play } from 'lucide-react'
 
-const PortfolioCard = ({ item, onDelete, isCustom }) => {
+const PLAYABLE_VIDEO_PATTERN = /\.(mp4|webm|ogg|mov)(?:[?#].*)?$/i
+
+const PortfolioCard = ({ item, onDelete, isCustom, onPreview }) => {
   const isProject = item.type === 'project' || !item.type
   const isCert = item.type === 'certificate'
   const isUIUX = item.type === 'uiux'
@@ -17,20 +19,36 @@ const PortfolioCard = ({ item, onDelete, isCustom }) => {
 
   const badge = getBadgeInfo()
   const BadgeIcon = badge.icon
+  const hasVideoPreview = isVideo && PLAYABLE_VIDEO_PATTERN.test(item.link || '')
+  const showMedia = hasVideoPreview || Boolean(item.image)
 
   return (
     <div className="glass-card group h-full flex flex-col overflow-hidden">
       {/* Image Container */}
-      <div className="relative h-44 sm:h-48 overflow-hidden shrink-0 bg-slate-900">
-        <img
-          src={item.image || 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=800&auto=format&fit=crop'}
-          alt={item.title}
-          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-          onError={e => {
-            e.target.onerror = null
-            e.target.src = 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=800&auto=format&fit=crop'
-          }}
-        />
+      {showMedia && (
+        <div className="relative h-44 sm:h-48 overflow-hidden shrink-0 bg-slate-900">
+        {hasVideoPreview ? (
+          <video
+            src={item.link}
+            poster={item.image || undefined}
+            muted
+            loop
+            autoPlay
+            playsInline
+            preload="metadata"
+            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+          />
+        ) : (
+          <img
+            src={item.image}
+            alt={item.title}
+            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+            onError={e => {
+              e.target.onerror = null
+              e.target.closest('.group')?.querySelector('img')?.remove()
+            }}
+          />
+        )}
 
         {/* Type Badge */}
         <div className="absolute top-3 left-3">
@@ -50,7 +68,8 @@ const PortfolioCard = ({ item, onDelete, isCustom }) => {
             <Trash2 size={13} />
           </button>
         )}
-      </div>
+        </div>
+      )}
 
       {/* Content */}
       <div className="p-5 flex flex-col flex-1 space-y-3">
@@ -84,7 +103,16 @@ const PortfolioCard = ({ item, onDelete, isCustom }) => {
 
         {/* Action Links */}
         <div className="flex items-center gap-3 pt-3 border-t border-slate-800/80">
-          {item.link && item.link !== '#' && (
+          {isVideo && onPreview && item.link && item.link !== '#' ? (
+            <button
+              type="button"
+              onClick={() => onPreview(item)}
+              className="inline-flex items-center gap-1.5 text-xs font-semibold text-cyan-400 hover:text-cyan-300"
+            >
+              <Play size={13} fill="currentColor" />
+              <span>Preview Video</span>
+            </button>
+          ) : item.link && item.link !== '#' && (
             <a
               href={item.link}
               target="_blank"

@@ -1,28 +1,56 @@
 'use client'
 
-import { Film, Loader2 } from 'lucide-react'
+import { useState } from 'react'
+import { Film, Loader2, X } from 'lucide-react'
 import PortfolioCard from './PortfolioCard'
 import { usePortfolio } from '../hooks/usePortfolio'
+
+const YOUTUBE_PATTERN = /(?:youtube\.com\/(?:watch\?v=|embed\/)|youtu\.be\/)([\w-]{11})/
+
+const VideoPreviewModal = ({ item, onClose }) => {
+  if (!item) return null
+  const youtubeMatch = item.link?.match(YOUTUBE_PATTERN)
+
+  return (
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/85 p-4 backdrop-blur-sm"
+      role="dialog"
+      aria-modal="true"
+      aria-label={`Video preview: ${item.title}`}
+      onClick={onClose}
+    >
+      <div className="w-full max-w-4xl overflow-hidden rounded-2xl border border-slate-700 bg-[#0b0f19] shadow-2xl" onClick={event => event.stopPropagation()}>
+        <div className="flex items-center justify-between gap-4 border-b border-slate-800 px-4 py-3">
+          <h3 className="truncate text-sm font-bold text-white">{item.title}</h3>
+          <button type="button" onClick={onClose} className="rounded-lg p-1.5 text-slate-400 hover:bg-slate-800 hover:text-white" aria-label="Close video preview">
+            <X size={18} />
+          </button>
+        </div>
+        <div className="aspect-video bg-black">
+          {youtubeMatch ? (
+            <iframe
+              src={`https://www.youtube.com/embed/${youtubeMatch[1]}?autoplay=1`}
+              title={item.title}
+              className="h-full w-full"
+              allow="autoplay; encrypted-media; picture-in-picture"
+              allowFullScreen
+            />
+          ) : (
+            <video src={item.link} poster={item.image || undefined} controls autoPlay playsInline className="h-full w-full object-contain" />
+          )}
+        </div>
+      </div>
+    </div>
+  )
+}
 
 const VideoSection = () => {
   const { items, loading } = usePortfolio()
   const videoItems = items.filter(item => item.type === 'video')
+  const [previewItem, setPreviewItem] = useState(null)
 
   return (
     <section id="video" className="section-container">
-      <div className="text-center mb-10 space-y-3">
-        <span className="inline-flex items-center gap-1.5 px-3.5 py-1 rounded-full text-xs font-semibold uppercase tracking-wider bg-rose-500/10 text-rose-400 border border-rose-500/20">
-          <Film size={13} />
-          Media & Video Editing
-        </span>
-        <h2 className="text-3xl sm:text-4xl font-extrabold text-white">
-          Video Editing & <span className="text-rose-400">Cinematic Content</span>
-        </h2>
-        <p className="max-w-xl mx-auto text-sm text-slate-400">
-          Commercial edits, motion graphics, and video production created with Premiere Pro & After Effects.
-        </p>
-      </div>
-
       {loading && (
         <div className="py-12 text-center text-slate-400">
           <Loader2 size={28} className="animate-spin mx-auto mb-2 text-rose-400" />
@@ -34,7 +62,7 @@ const VideoSection = () => {
         <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
           {videoItems.length > 0 ? (
             videoItems.map((item, i) => (
-              <PortfolioCard key={item.id || i} item={item} index={i} />
+              <PortfolioCard key={item.id || i} item={item} index={i} onPreview={setPreviewItem} />
             ))
           ) : (
             <div className="col-span-full py-12 text-center">
@@ -46,6 +74,8 @@ const VideoSection = () => {
           )}
         </div>
       )}
+
+      <VideoPreviewModal item={previewItem} onClose={() => setPreviewItem(null)} />
     </section>
   )
 }

@@ -7,7 +7,6 @@ import BentoGrid from '../components/BentoGrid'
 import Journey from '../components/Journey'
 import Skills from '../components/Skills'
 import Projects from '../components/Projects'
-import UIUXSection from '../components/UIUXSection'
 import VideoSection from '../components/VideoSection'
 import CertificatesSection from '../components/CertificatesSection'
 import Contact from '../components/Contact'
@@ -39,7 +38,6 @@ export default function Home() {
           <Journey />
           <Skills />
           <Projects />
-          <UIUXSection />
           <VideoSection />
           <CertificatesSection />
           <Contact />
@@ -49,7 +47,7 @@ export default function Home() {
         <footer className="border-t border-slate-800/80 bg-[#070a12] py-8 text-center text-sm text-slate-400">
           <div className="max-w-7xl mx-auto px-4 flex flex-col sm:flex-row items-center justify-between gap-4">
             <p>© {new Date().getFullYear()} Amit Patel. All rights reserved.</p>
-            <p className="text-xs text-slate-500">Built with Next.js, Tailwind CSS & MongoDB</p>
+            <p className="text-xs text-slate-500">Built with Next.js, Tailwind CSS & local portfolio files</p>
           </div>
         </footer>
 

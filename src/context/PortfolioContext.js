@@ -1,8 +1,31 @@
 'use client'
 
 import { createContext, useContext, useState, useEffect, useCallback } from 'react'
+import portfolioData from '../data/portfolio.json'
 
 const PortfolioContext = createContext()
+const STORAGE_KEY = 'ap_portfolio_local_content'
+const LOCAL_ASSET_TYPES = {
+  certificates: 'certificate',
+  videos: 'video',
+}
+
+const titleFromFilename = (name) => name
+  .replace(/\.[^/.]+$/, '')
+  .replace(/[-_]+/g, ' ')
+  .replace(/\b\w/g, letter => letter.toUpperCase())
+
+const readSavedContent = () => {
+  try {
+    const saved = JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}')
+    return {
+      items: Array.isArray(saved.items) ? saved.items : [],
+      deletedIds: Array.isArray(saved.deletedIds) ? saved.deletedIds : [],
+    }
+  } catch {
+    return { items: [], deletedIds: [] }
+  }
+}
 
 export const PortfolioProvider = ({ children }) => {
   const [items, setItems] = useState([])
@@ -12,16 +35,54 @@ export const PortfolioProvider = ({ children }) => {
   const fetchItems = useCallback(async () => {
     setLoading(true)
     try {
-      const apiRes = await fetch('/api/portfolio')
-      const data = await apiRes.json()
-      if (!apiRes.ok || !data.success) {
-        throw new Error(data.error || 'Unable to load portfolio items.')
-      }
-      setItems(data.items || [])
+      const saved = readSavedContent()
+      const responses = await Promise.all(
+        Object.keys(LOCAL_ASSET_TYPES).map(async folder => {
+          const response = await fetch(`/api/uploads?folder=${folder}`)
+          const data = await response.json()
+          if (!response.ok) throw new Error(data.error || `Unable to read ${folder}.`)
+          return data.files.map(file => ({ ...file, type: LOCAL_ASSET_TYPES[folder] }))
+        })
+      )
+
+      const savedById = new Map(saved.items.map(item => [item.id, item]))
+      const savedByLink = new Map(saved.items.map(item => [item.link, item]))
+      const deleted = new Set(saved.deletedIds)
+      const staticItems = (portfolioData.items || [])
+        .filter(item => item.type !== 'certificate' && item.type !== 'video')
+        .filter(item => !deleted.has(item.id))
+        .map(item => savedById.get(item.id) || item)
+
+      const uploadedItems = responses.flat().map(file => {
+        const generated = {
+          id: `local_${file.type}_${file.path}`,
+          type: file.type,
+          title: titleFromFilename(file.name),
+          description: '',
+          image: file.type === 'certificate' && /\.(jpe?g|png|webp|gif|avif)$/i.test(file.name) ? file.path : '',
+          link: file.path,
+          tags: [],
+          issuer: '',
+          date: '',
+        }
+        return savedById.get(generated.id) || savedByLink.get(file.path) || generated
+      }).filter(item => !deleted.has(item.id))
+
+      const displayedIds = new Set([...staticItems, ...uploadedItems].map(item => item.id))
+      const savedExtras = saved.items.filter(item =>
+        !displayedIds.has(item.id) &&
+        (item.type !== 'certificate' && item.type !== 'video')
+      )
+
+      setItems([...savedExtras, ...uploadedItems, ...staticItems])
       setError(null)
     } catch (err) {
-      console.error('MongoDB fetch error:', err)
-      setItems([])
+      console.error('Local upload fetch error:', err)
+      const saved = readSavedContent()
+      const staticItems = (portfolioData.items || []).filter(item =>
+        item.type !== 'certificate' && item.type !== 'video' && !saved.deletedIds.includes(item.id)
+      )
+      setItems([...saved.items, ...staticItems])
       setError(err.message)
     }
     setLoading(false)
@@ -31,72 +92,30 @@ export const PortfolioProvider = ({ children }) => {
     fetchItems()
   }, [fetchItems])
 
+  const saveContent = (nextItems, deletedIds = readSavedContent().deletedIds) => {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify({ items: nextItems, deletedIds }))
+    setItems(nextItems)
+  }
+
   const addItem = async (item) => {
-    try {
-      const res = await fetch('/api/portfolio', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(item),
-      })
-      const data = await res.json()
-      if (res.ok && data.success && data.items) {
-        setItems(data.items)
-        return data.item
-      }
-      throw new Error(data.error || 'Unable to add item.')
-    } catch (e) {
-      console.error('Failed to add item:', e)
-      throw e
-    }
+    const newItem = { ...item, id: item.id || `local_item_${Date.now()}` }
+    saveContent([newItem, ...items])
+    return newItem
   }
 
   const updateItem = async (id, updates) => {
-    try {
-      const res = await fetch('/api/portfolio', {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ id, ...updates }),
-      })
-      const data = await res.json()
-      if (res.ok && data.success && data.items) {
-        setItems(data.items)
-        return data.item
-      }
-      throw new Error(data.error || 'Unable to update item.')
-    } catch (e) {
-      console.error('Failed to update item:', e)
-      throw e
-    }
+    const nextItems = items.map(item => (item.id === id || item._id === id) ? { ...item, ...updates, id } : item)
+    saveContent(nextItems)
+    return nextItems.find(item => item.id === id)
   }
 
   const deleteItem = async (id) => {
-    try {
-      const res = await fetch(`/api/portfolio?id=${encodeURIComponent(id)}`, { method: 'DELETE' })
-      const data = await res.json()
-      if (res.ok && data.success && data.items) {
-        setItems(data.items)
-        return
-      }
-      throw new Error(data.error || 'Unable to delete item.')
-    } catch (e) {
-      console.error('Failed to delete item:', e)
-      throw e
-    }
+    const { deletedIds } = readSavedContent()
+    saveContent(items.filter(item => item.id !== id && item._id !== id), [...new Set([...deletedIds, id])])
   }
 
   const deleteAllItems = async () => {
-    try {
-      const res = await fetch('/api/portfolio?all=true', { method: 'DELETE' })
-      const data = await res.json()
-      if (res.ok && data.success && data.items) {
-        setItems(data.items)
-        return
-      }
-      throw new Error(data.error || 'Unable to delete items.')
-    } catch (e) {
-      console.error('Failed to delete all items:', e)
-      throw e
-    }
+    saveContent([], items.map(item => item.id))
   }
 
   return (

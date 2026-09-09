@@ -7,6 +7,7 @@ import {
   LayoutDashboard, Plus, Pencil, Trash2, X, Save, Loader2,
   Code2, Award, Palette, Film, ExternalLink, ArrowLeft, Search, LayoutGrid,
   ImageIcon, Link2, Tag, Star, Lock, Eye, EyeOff, LogOut, ShieldCheck,
+  FolderOpen,
 } from 'lucide-react'
 import { usePortfolio } from '../hooks/usePortfolio'
 
@@ -45,6 +46,77 @@ const LINK_FIELD = {
     placeholder: '/uploads/videos/video.mp4',
     helper: 'Upload the video to public/uploads/videos, then paste its path here. YouTube, Drive, and other watch links also work.',
   },
+}
+
+const IMAGE_FILE_PATTERN = /\.(jpe?g|png|webp|gif|avif)(?:[?#].*)?$/i
+
+const LocalFilePicker = ({ folder, onSelect }) => {
+  const [isOpen, setIsOpen] = useState(false)
+  const [files, setFiles] = useState([])
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState('')
+
+  useEffect(() => {
+    if (!isOpen) return
+
+    let active = true
+    const loadFiles = async () => {
+      setLoading(true)
+      setError('')
+      try {
+        const response = await fetch(`/api/uploads?folder=${encodeURIComponent(folder)}`)
+        const data = await response.json()
+        if (!response.ok) throw new Error(data.error || 'Could not read upload folder.')
+        if (active) setFiles(data.files || [])
+      } catch (err) {
+        if (active) setError(err.message)
+      } finally {
+        if (active) setLoading(false)
+      }
+    }
+
+    loadFiles()
+    return () => { active = false }
+  }, [folder, isOpen])
+
+  const choose = (filePath) => {
+    onSelect(filePath)
+    setIsOpen(false)
+  }
+
+  return (
+    <div className="mt-2">
+      <button
+        type="button"
+        onClick={() => setIsOpen(open => !open)}
+        className="inline-flex items-center gap-1.5 text-[11px] font-semibold text-cyan-400 hover:text-cyan-300"
+      >
+        <FolderOpen size={13} />
+        Select from uploads/{folder}
+      </button>
+
+      {isOpen && (
+        <div className="mt-2 rounded-lg border border-slate-700 bg-slate-950 p-2">
+          {loading && <p className="px-2 py-1 text-[11px] text-slate-400">Loading files…</p>}
+          {error && <p className="px-2 py-1 text-[11px] text-red-400">{error}</p>}
+          {!loading && !error && files.length === 0 && (
+            <p className="px-2 py-1 text-[11px] text-slate-500">No files found. Add a file to public/uploads/{folder} first.</p>
+          )}
+          {!loading && !error && files.map(file => (
+            <button
+              key={file.path}
+              type="button"
+              onClick={() => choose(file.path)}
+              className="block w-full truncate rounded-md px-2 py-1.5 text-left text-[11px] text-slate-300 hover:bg-slate-800 hover:text-white"
+              title={file.path}
+            >
+              {file.name}
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  )
 }
 
 /* Login Screen */
@@ -155,7 +227,7 @@ const ItemForm = ({ initial, onSave, onClose, saving }) => {
   const submit = e => {
     e.preventDefault()
     if (!form.title || !form.description) { toast.error('Title & description required.'); return }
-    const certificateImage = form.type === 'certificate' && /\.(jpe?g|png|webp|gif|avif)(?:[?#].*)?$/i.test(form.link)
+    const certificateImage = form.type === 'certificate' && IMAGE_FILE_PATTERN.test(form.link)
     onSave({
       ...form,
       // An image certificate can double as its card cover when a separate cover was not provided.
@@ -178,7 +250,7 @@ const ItemForm = ({ initial, onSave, onClose, saving }) => {
       <div className="w-full max-w-lg glass-card p-6 space-y-4 max-h-[90vh] overflow-y-auto">
         <div className="flex items-center justify-between border-b border-slate-800 pb-3">
           <h3 className="font-bold text-lg text-white">
-            {isEdit ? 'Edit Item (MongoDB)' : 'Add New Item (MongoDB)'}
+            {isEdit ? 'Edit Local Item' : 'Add Local Item'}
           </h3>
           <button onClick={onClose} className="p-1 rounded-lg hover:bg-slate-800 text-slate-400 hover:text-white">
             <X size={18} />
@@ -221,6 +293,7 @@ const ItemForm = ({ initial, onSave, onClose, saving }) => {
             <label className="block text-xs font-semibold text-slate-300 mb-1">Thumbnail / cover image</label>
             <input name="image" value={form.image} onChange={set} placeholder="/uploads/thumbnails/cover.jpg or https://..." className={INP} />
             <p className="mt-1 text-[11px] leading-relaxed text-slate-500">For local cover images, upload to public/uploads/thumbnails. For an image certificate, this can be left blank—the certificate image will be used automatically.</p>
+            <LocalFilePicker folder="thumbnails" onSelect={path => setForm(f => ({ ...f, image: path }))} />
           </div>
 
           <div className="grid grid-cols-2 gap-3">
@@ -228,6 +301,16 @@ const ItemForm = ({ initial, onSave, onClose, saving }) => {
               <label className="block text-xs font-semibold text-slate-300 mb-1">{linkField.label}</label>
               <input name="link" value={form.link} onChange={set} placeholder={linkField.placeholder} className={INP} />
               <p className="mt-1 text-[11px] leading-relaxed text-slate-500">{linkField.helper}</p>
+              {(form.type === 'certificate' || form.type === 'video') && (
+                <LocalFilePicker
+                  folder={form.type === 'certificate' ? 'certificates' : 'videos'}
+                  onSelect={path => setForm(f => ({
+                    ...f,
+                    link: path,
+                    image: f.type === 'certificate' && !f.image && IMAGE_FILE_PATTERN.test(path) ? path : f.image,
+                  }))}
+                />
+              )}
             </div>
             {form.type === 'project' ? (
               <div>
@@ -258,7 +341,7 @@ const ItemForm = ({ initial, onSave, onClose, saving }) => {
             className="w-full py-3 rounded-xl text-sm font-semibold text-white bg-cyan-600 hover:bg-cyan-500 transition-colors flex items-center justify-center gap-2 disabled:opacity-50"
           >
             {saving ? <Loader2 size={16} className="animate-spin" /> : <Save size={16} />}
-            <span>{isEdit ? 'Save links & details to MongoDB' : 'Add links & details to MongoDB'}</span>
+            <span>{isEdit ? 'Save details on this browser' : 'Add local details'}</span>
           </button>
         </form>
       </div>
@@ -351,10 +434,10 @@ const AdminPanel = () => {
     setSaving(true)
     try {
       const targetId = editItem ? getItemId(editItem) : null
-      if (targetId) { await updateItem(targetId, data); toast.success('Saved to MongoDB!') }
-      else { await addItem(data); toast.success('Added to MongoDB!') }
+      if (targetId) { await updateItem(targetId, data); toast.success('Saved in this browser!') }
+      else { await addItem(data); toast.success('Added in this browser!') }
       close()
-    } catch { toast.error('Something went wrong with MongoDB.') }
+    } catch { toast.error('Could not save local details.') }
     finally { setSaving(false) }
   }
 
@@ -363,8 +446,8 @@ const AdminPanel = () => {
       toast.error('Item ID missing.')
       return
     }
-    if (!window.confirm('Delete this item from MongoDB?')) return
-    try { await deleteItem(id); toast.success('Deleted from MongoDB.') }
+    if (!window.confirm('Remove this item from the portfolio? The uploaded file will not be deleted.')) return
+    try { await deleteItem(id); toast.success('Removed from this browser.') }
     catch { toast.error('Could not delete.') }
   }
 
@@ -380,7 +463,7 @@ const AdminPanel = () => {
             <span className="text-slate-700">|</span>
             <div className="flex items-center gap-2">
               <LayoutDashboard size={18} className="text-cyan-400" />
-              <span className="font-bold text-white text-base">Admin Panel (MongoDB Connected)</span>
+              <span className="font-bold text-white text-base">Admin Panel (Local Files)</span>
             </div>
           </div>
 
@@ -413,12 +496,12 @@ const AdminPanel = () => {
         <div className="rounded-xl border border-cyan-900/60 bg-cyan-950/20 px-4 py-3 text-xs leading-relaxed text-slate-300">
           <span className="font-semibold text-cyan-300">Local uploads:</span>{' '}
           certificate PDFs/images → <code className="text-cyan-200">public/uploads/certificates</code>, videos → <code className="text-cyan-200">public/uploads/videos</code>, covers → <code className="text-cyan-200">public/uploads/thumbnails</code>.
-          {' '}After uploading, add each file path or external URL from the item form below.
+          {' '}After uploading, select each file from the item form below. Titles and descriptions are saved in this browser only.
         </div>
 
         {error && (
           <div className="flex items-center justify-between gap-4 rounded-xl border border-red-800/60 bg-red-950/40 px-4 py-3 text-sm text-red-200">
-            <span>MongoDB unavailable: {error}</span>
+            <span>Local upload folders unavailable: {error}</span>
             <button onClick={() => window.location.reload()} className="shrink-0 font-semibold text-red-100 underline hover:text-white">
               Retry
             </button>
@@ -463,7 +546,7 @@ const AdminPanel = () => {
           {loading && (
             <div className="py-12 text-center text-slate-400">
               <Loader2 size={24} className="animate-spin mx-auto mb-2 text-cyan-400" />
-              Loading MongoDB portfolio items…
+              Loading local portfolio items…
             </div>
           )}
 

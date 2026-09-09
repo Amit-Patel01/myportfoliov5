@@ -13,4 +13,6 @@ Use their public paths in the Admin Panel, for example:
 - Video: `/uploads/videos/brand-commercial.mp4`
 - Cover image: `/uploads/thumbnails/brand-commercial.jpg`
 
-All titles, descriptions, tags, issuers, dates, and external links continue to be managed in MongoDB through the Admin Panel.
+Titles, descriptions, tags, issuers, dates, and links are managed from the Admin Panel and saved in that browser's local storage. No files or portfolio details are stored in MongoDB.
+
+When adding a certificate, video, or thumbnail from Admin Panel, use **Select from uploads/...** to choose an existing file and fill its path automatically.
