@@ -2,13 +2,14 @@
 
 Place portfolio assets in these folders:
 
-- `certificates/` — certificate PDFs or images
+- `certificates/` — certificate PDFs or images (`.pdf`, `.jpg`, `.jpeg`, `.png`, `.webp`)
 - `videos/` — video files
 - `thumbnails/` — cover images for cards
 
 Use their public paths in the Admin Panel, for example:
 
-- Certificate: `/uploads/certificates/responsive-web-design.pdf`
+- Certificate PDF: `/uploads/certificates/responsive-web-design.pdf`
+- Certificate image: `/uploads/certificates/responsive-web-design.jpg`
 - Video: `/uploads/videos/brand-commercial.mp4`
 - Cover image: `/uploads/thumbnails/brand-commercial.jpg`
 

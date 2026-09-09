@@ -37,8 +37,8 @@ const LINK_FIELD = {
   },
   certificate: {
     label: 'Certificate file or verification link',
-    placeholder: '/uploads/certificates/certificate.pdf',
-    helper: 'Upload the PDF to public/uploads/certificates, then paste its path here. External verification links also work.',
+    placeholder: '/uploads/certificates/certificate.pdf or .jpg',
+    helper: 'Upload a PDF or image to public/uploads/certificates, then paste its path here. External verification links also work.',
   },
   video: {
     label: 'Video file or watch link',
@@ -155,8 +155,11 @@ const ItemForm = ({ initial, onSave, onClose, saving }) => {
   const submit = e => {
     e.preventDefault()
     if (!form.title || !form.description) { toast.error('Title & description required.'); return }
+    const certificateImage = form.type === 'certificate' && /\.(jpe?g|png|webp|gif|avif)(?:[?#].*)?$/i.test(form.link)
     onSave({
       ...form,
+      // An image certificate can double as its card cover when a separate cover was not provided.
+      image: form.image || (certificateImage ? form.link : ''),
       tags: typeof form.tags === 'string'
         ? form.tags.split(',').map(t => t.trim()).filter(Boolean)
         : form.tags,
@@ -217,7 +220,7 @@ const ItemForm = ({ initial, onSave, onClose, saving }) => {
           <div>
             <label className="block text-xs font-semibold text-slate-300 mb-1">Thumbnail / cover image</label>
             <input name="image" value={form.image} onChange={set} placeholder="/uploads/thumbnails/cover.jpg or https://..." className={INP} />
-            <p className="mt-1 text-[11px] leading-relaxed text-slate-500">For local cover images, upload to public/uploads/thumbnails and use the path starting with /uploads/.</p>
+            <p className="mt-1 text-[11px] leading-relaxed text-slate-500">For local cover images, upload to public/uploads/thumbnails. For an image certificate, this can be left blank—the certificate image will be used automatically.</p>
           </div>
 
           <div className="grid grid-cols-2 gap-3">
@@ -409,7 +412,7 @@ const AdminPanel = () => {
 
         <div className="rounded-xl border border-cyan-900/60 bg-cyan-950/20 px-4 py-3 text-xs leading-relaxed text-slate-300">
           <span className="font-semibold text-cyan-300">Local uploads:</span>{' '}
-          certificates → <code className="text-cyan-200">public/uploads/certificates</code>, videos → <code className="text-cyan-200">public/uploads/videos</code>, covers → <code className="text-cyan-200">public/uploads/thumbnails</code>.
+          certificate PDFs/images → <code className="text-cyan-200">public/uploads/certificates</code>, videos → <code className="text-cyan-200">public/uploads/videos</code>, covers → <code className="text-cyan-200">public/uploads/thumbnails</code>.
           {' '}After uploading, add each file path or external URL from the item form below.
         </div>
 
