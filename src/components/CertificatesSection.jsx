@@ -1,51 +1,43 @@
 'use client'
 
-import { Award, Loader2 } from 'lucide-react'
+import { Award, CheckCircle2, ExternalLink } from 'lucide-react'
 import PortfolioCard from './PortfolioCard'
+import defaultPortfolioData from '../data/portfolio.json'
 import { usePortfolio } from '../hooks/usePortfolio'
 
 const CertificatesSection = () => {
-  const { items, loading } = usePortfolio()
-  const certItems = items.filter(item => item.type === 'certificate')
+  const { items: contextItems } = usePortfolio()
+  
+  // Ensure we always have high quality verified credentials from portfolio.json as baseline
+  const fallbackCerts = (defaultPortfolioData.items || []).filter(item => item.type === 'certificate')
+  const certItems = contextItems?.filter(item => item.type === 'certificate').length > 0 
+    ? contextItems.filter(item => item.type === 'certificate')
+    : fallbackCerts
 
   return (
     <section id="certificates" className="section-container">
+      
+      {/* Section Header */}
       <div className="text-center mb-10 space-y-3">
-        <span className="inline-flex items-center gap-1.5 px-3.5 py-1 rounded-full text-xs font-semibold uppercase tracking-wider bg-amber-500/10 text-amber-400 border border-amber-500/20">
+        <span className="inline-flex items-center gap-1.5 px-3.5 py-1 rounded-full text-xs font-semibold uppercase tracking-wider bg-emerald-50 dark:bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-500/20 shadow-sm">
           <Award size={13} />
-          Certifications & Credentials
+          Verified Credentials
         </span>
-        <h2 className="text-3xl sm:text-4xl font-extrabold text-white">
-          Certificates & <span className="text-amber-400">Achievements</span>
+        <h2 className="text-3xl sm:text-4xl font-extrabold text-slate-900 dark:text-white">
+          Certificates &amp; <span className="gradient-text">Achievements</span>
         </h2>
-        <p className="max-w-xl mx-auto text-sm text-slate-400">
-          Verified certificates from freeCodeCamp, Udemy, and technical organizations.
+        <p className="max-w-xl mx-auto text-sm text-slate-600 dark:text-slate-400">
+          Industry-recognized certifications and intensive coursework in modern web development and algorithms.
         </p>
       </div>
 
-      {loading && (
-        <div className="py-12 text-center text-slate-400">
-          <Loader2 size={28} className="animate-spin mx-auto mb-2 text-amber-400" />
-          Loading certificates…
-        </div>
-      )}
+      {/* Grid */}
+      <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
+        {certItems.map((item, i) => (
+          <PortfolioCard key={item.id || i} item={item} index={i} />
+        ))}
+      </div>
 
-      {!loading && (
-        <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
-          {certItems.length > 0 ? (
-            certItems.map((item, i) => (
-              <PortfolioCard key={item.id || i} item={item} index={i} />
-            ))
-          ) : (
-            <div className="col-span-full py-12 text-center">
-              <div className="inline-block p-6 glass-card max-w-sm mx-auto space-y-3">
-                <Award size={32} className="mx-auto text-slate-500" />
-                <p className="text-sm text-slate-400">No certificates added yet. You can add them from Admin Panel.</p>
-              </div>
-            </div>
-          )}
-        </div>
-      )}
     </section>
   )
 }

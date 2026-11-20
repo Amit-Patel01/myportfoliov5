@@ -4,12 +4,12 @@ import { useEffect } from 'react'
 import Navbar from '../components/Navbar'
 import Hero from '../components/Hero'
 import BentoGrid from '../components/BentoGrid'
-import Journey from '../components/Journey'
 import Skills from '../components/Skills'
 import Projects from '../components/Projects'
-import VideoSection from '../components/VideoSection'
+import Journey from '../components/Journey'
 import CertificatesSection from '../components/CertificatesSection'
 import Contact from '../components/Contact'
+import BackgroundBlobs from '../components/BackgroundBlobs'
 import { ScrollToTop } from '../components/ScrollToTop'
 
 export default function Home() {
@@ -21,33 +21,37 @@ export default function Home() {
   }, [])
 
   return (
-    <div className="relative min-h-screen bg-[#090d16] text-slate-100 selection:bg-cyan-500/30">
-      {/* Ambient lighting */}
-      <div className="pointer-events-none fixed inset-0 z-0 overflow-hidden">
-        <div className="absolute -top-40 -left-40 h-96 w-96 rounded-full bg-cyan-500/10 blur-3xl" />
-        <div className="absolute top-1/3 -right-40 h-96 w-96 rounded-full bg-indigo-500/10 blur-3xl" />
-        <div className="absolute bottom-10 left-1/4 h-96 w-96 rounded-full bg-blue-600/10 blur-3xl" />
-      </div>
+    <div className="relative min-h-screen bg-slate-50 dark:bg-[#090d16] text-slate-900 dark:text-slate-100 selection:bg-sky-500/20 selection:text-sky-900 dark:selection:bg-sky-500/30 dark:selection:text-white transition-colors duration-300">
+      
+      {/* Modern Animated Glowing Blobs & Tech Grid Background */}
+      <BackgroundBlobs />
 
       {/* Main Content Layout */}
       <div className="relative z-10">
         <Navbar />
-        <main className="flex flex-col gap-12">
+        
+        <main className="flex flex-col gap-6 sm:gap-10">
           <Hero />
           <BentoGrid />
-          <Journey />
           <Skills />
           <Projects />
-          <VideoSection />
+          <Journey />
           <CertificatesSection />
           <Contact />
         </main>
 
-        {/* Footer */}
-        <footer className="border-t border-slate-800/80 bg-[#070a12] py-8 text-center text-sm text-slate-400">
-          <div className="max-w-7xl mx-auto px-4 flex flex-col sm:flex-row items-center justify-between gap-4">
-            <p>© {new Date().getFullYear()} Amit Patel. All rights reserved.</p>
-            <p className="text-xs text-slate-500">Built with Next.js, Tailwind CSS & local portfolio files</p>
+        {/* Clean Corporate Footer */}
+        <footer className="border-t border-slate-200/90 dark:border-slate-800/80 bg-white dark:bg-[#070a12] py-8 text-sm text-slate-600 dark:text-slate-400 transition-colors">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 flex flex-col sm:flex-row items-center justify-between gap-4">
+            <div className="flex items-center gap-2">
+              <span className="font-bold text-slate-900 dark:text-white tracking-tight">Amit Patel</span>
+              <span className="text-slate-400 dark:text-slate-600">&bull;</span>
+              <span className="text-xs text-slate-600 dark:text-slate-400">Full Stack Developer &amp; Software Engineer</span>
+            </div>
+
+            <p className="text-xs text-slate-500 text-center sm:text-right">
+              &copy; {new Date().getFullYear()} Amit Patel. All rights reserved.
+            </p>
           </div>
         </footer>
 

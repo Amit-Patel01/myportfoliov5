@@ -7,10 +7,10 @@ import CustomCursor from '../components/CustomCursor'
 export const metadata = {
   metadataBase: new URL('https://amitpatel.dev'),
   title: {
-    default: 'Amit Patel | Full Stack Developer & AI Solutions Architect',
+    default: 'Amit Patel | Full Stack Developer & Software Engineer',
     template: '%s | Amit Patel',
   },
-  description: 'Portfolio of Amit Patel - Senior Full Stack Developer, AI Solutions Architect, and Cloud Engineer specializing in React, Next.js, Node.js, and modern web engineering.',
+  description: 'Portfolio of Amit Patel - Full Stack Developer and Software Engineer specializing in React, Next.js, Node.js, TypeScript, and modern web application development.',
   icons: {
     icon: '/logo.png',
     shortcut: '/logo.png',
@@ -37,7 +37,7 @@ export const metadata = {
     telephone: false,
   },
   openGraph: {
-    title: 'Amit Patel | Full Stack Developer & AI Solutions Architect',
+    title: 'Amit Patel | Full Stack Developer & Software Engineer',
     description: 'Explore projects, technical skills, and software engineering solutions by Amit Patel.',
     url: 'https://amitpatel.dev',
     siteName: 'Amit Patel Portfolio',
@@ -87,8 +87,8 @@ const jsonLd = {
       '@type': 'Person',
       '@id': 'https://amitpatel.dev/#person',
       name: 'Amit Patel',
-      jobTitle: 'Full Stack Developer & AI Solutions Architect',
-      description: 'Senior Software Engineer specializing in React, Next.js, Node.js, Cloud Services, and AI Application Development.',
+      jobTitle: 'Full Stack Developer & Software Engineer',
+      description: 'Software Engineer specializing in React, Next.js, Node.js, and modern full-stack web application development.',
       url: 'https://amitpatel.dev',
       image: 'https://amitpatel.dev/assets/profile.jpeg',
       sameAs: [

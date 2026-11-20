@@ -1,130 +1,68 @@
 'use client'
 
-import { useCallback, useEffect, useState } from 'react'
-import { Loader2, RefreshCw, WifiOff, Code2, Github } from 'lucide-react'
-import PortfolioCard from './PortfolioCard'
+import { ExternalLink, ArrowUpRight } from 'lucide-react'
+import { FaGithub } from 'react-icons/fa'
 
-const CATEGORIES = ['All', 'Frontend', 'Backend & DB', 'Others']
-const EXCLUDED_REPOSITORIES = new Set([
-  'campus-connect', 'amitsolutionhub', 'chokeyy', 'solutionhub', 'ashexam',
-  'nirvabirthdayjoshisis', 'certificategenaret', 'lms-solutionhu', 'birthday',
-  'amitsolutionhub-solutionchat', 'portfoiloamit',
-])
-
-const isAllowedRepository = (project) => {
-  const repositoryName = project.github?.split('/').pop()?.toLowerCase()
-  return repositoryName && !EXCLUDED_REPOSITORIES.has(repositoryName)
-}
+const GITHUB_PROFILE_URL = 'https://github.com/amit-patel01?tab=repositories'
 
 const Projects = () => {
-  const [projects, setProjects] = useState([])
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState(null)
-  const [activeCategory, setActiveCategory] = useState('All')
-
-  const loadProjects = useCallback(async () => {
-    setLoading(true)
-    try {
-      const response = await fetch('/api/github-projects', { cache: 'no-store' })
-      const data = await response.json()
-      if (!response.ok) throw new Error(data.error || 'Could not load GitHub repositories.')
-      // Client-side safeguard: excluded repositories can never render, even from a stale API response.
-      setProjects((data.items || []).filter(isAllowedRepository))
-      setError(null)
-    } catch (err) {
-      setProjects([])
-      setError(err.message)
-    } finally {
-      setLoading(false)
-    }
-  }, [])
-
-  useEffect(() => {
-    loadProjects()
-  }, [loadProjects])
-
-  const filterItem = (item, category) => {
-    if (category === 'All') return true
-    const tags = (item.tags || []).map(tag => tag.toLowerCase())
-    const frontendTech = ['react', 'next.js', 'html', 'css', 'bootstrap', 'tailwindcss', 'javascript', 'typescript', 'canvas api', 'three.js', 'angular', 'jquery', 'responsive']
-    const backendTech = ['node.js', 'express', 'php', 'mysql', 'mongodb', 'firebase', 'python', 'java', 'django', 'flask', 'fastapi', 'spring boot', '.net', 'c#', 'database']
-
-    if (category === 'Frontend') return tags.some(tag => frontendTech.includes(tag))
-    if (category === 'Backend & DB') return tags.some(tag => backendTech.includes(tag))
-    return !tags.some(tag => frontendTech.includes(tag) || backendTech.includes(tag))
-  }
-
-  const filteredItems = projects.filter(item => filterItem(item, activeCategory))
-
   return (
     <section id="projects" className="section-container">
-      <div className="text-center mb-10 space-y-3">
-        <span className="inline-flex items-center gap-1.5 px-3.5 py-1 rounded-full text-xs font-semibold uppercase tracking-wider bg-cyan-500/10 text-cyan-400 border border-cyan-500/20">
-          <Github size={13} />
-          Web & App Projects
-        </span>
-        <h2 className="text-3xl sm:text-4xl font-extrabold text-white">
-          Software & Web <span className="text-cyan-400">Projects</span>
-        </h2>
-        <p className="max-w-xl mx-auto text-sm text-slate-400">Latest public repositories fetched from GitHub.</p>
-      </div>
+      <div className="glass-card max-w-4xl mx-auto p-8 sm:p-12 text-center space-y-6 border border-slate-200/90 dark:border-slate-800/80 shadow-md">
+        
+        {/* Badge */}
+        <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full text-xs font-semibold uppercase tracking-wider bg-sky-50 dark:bg-sky-500/10 text-sky-700 dark:text-sky-400 border border-sky-200 dark:border-sky-500/20 shadow-sm mx-auto">
+          <FaGithub size={14} />
+          <span>Open Source &amp; Code Repositories</span>
+        </div>
 
-      {!loading && !error && (
-        <div className="flex flex-wrap justify-center items-center gap-2 mb-10">
-          {CATEGORIES.map(category => (
-            <button
-              key={category}
-              onClick={() => setActiveCategory(category)}
-              className={`px-4 py-2 text-xs font-semibold rounded-xl transition-all duration-200 ${
-                activeCategory === category
-                  ? 'bg-cyan-600 text-white shadow-md shadow-cyan-900/40'
-                  : 'bg-slate-800/80 text-slate-400 hover:text-white hover:bg-slate-700'
-              }`}
+        {/* Heading */}
+        <div className="space-y-3">
+          <h2 className="text-3xl sm:text-4xl font-extrabold text-slate-900 dark:text-white">
+            Explore All Projects on <span className="gradient-text">GitHub</span>
+          </h2>
+          <p className="max-w-xl mx-auto text-sm sm:text-base text-slate-600 dark:text-slate-400 leading-relaxed">
+            All my software applications, full-stack web platforms, interactive tools, and open-source contributions are actively maintained and publicly available on GitHub.
+          </p>
+        </div>
+
+        {/* Feature Badges */}
+        <div className="flex flex-wrap items-center justify-center gap-2.5 pt-2">
+          {['Production-Ready Repositories', 'Full Stack MERN & Next.js', 'Clean Git Architecture', 'Active Commits'].map((tag) => (
+            <span
+              key={tag}
+              className="px-3 py-1 text-xs font-semibold rounded-lg bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700/60 text-slate-700 dark:text-slate-300 shadow-sm"
             >
-              {category}
-            </button>
+              {tag}
+            </span>
           ))}
         </div>
-      )}
 
-      {loading && (
-        <div className="py-16 text-center space-y-3">
-          <Loader2 size={32} className="text-cyan-400 animate-spin mx-auto" />
-          <p className="text-sm text-slate-400 font-medium">Loading GitHub projects…</p>
-        </div>
-      )}
+        {/* Big Direct GitHub Buttons */}
+        <div className="pt-4 flex flex-col sm:flex-row items-center justify-center gap-3">
+          <a
+            href={GITHUB_PROFILE_URL}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="btn-primary text-sm sm:text-base px-8 py-3.5 font-bold shadow-lg shadow-sky-600/25 flex items-center justify-center gap-2.5 w-full sm:w-auto"
+          >
+            <FaGithub size={20} />
+            <span>Go to GitHub Repositories</span>
+            <ExternalLink size={16} />
+          </a>
 
-      {error && (
-        <div className="py-8 max-w-md mx-auto">
-          <div className="glass-card p-6 text-center space-y-4">
-            <div className="w-12 h-12 rounded-xl bg-amber-500/10 text-amber-400 border border-amber-500/20 flex items-center justify-center mx-auto">
-              <WifiOff size={24} />
-            </div>
-            <div>
-              <h3 className="font-bold text-white mb-1 text-sm">GitHub projects unavailable</h3>
-              <p className="text-xs text-slate-400">{error}</p>
-            </div>
-            <button onClick={loadProjects} className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-cyan-600 hover:bg-cyan-500 text-white text-xs font-semibold">
-              <RefreshCw size={14} /> Retry
-            </button>
-          </div>
+          <a
+            href="https://github.com/amit-patel01"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="btn-secondary text-sm sm:text-base px-6 py-3.5 font-semibold flex items-center justify-center gap-2 w-full sm:w-auto"
+          >
+            <span>@amit-patel01 Profile</span>
+            <ArrowUpRight size={16} />
+          </a>
         </div>
-      )}
 
-      {!loading && !error && (
-        <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
-          {filteredItems.length > 0 ? (
-            filteredItems.map((item, index) => <PortfolioCard key={item.id || index} item={item} index={index} />)
-          ) : (
-            <div className="col-span-full py-16 text-center">
-              <div className="inline-block p-6 glass-card max-w-sm mx-auto space-y-3">
-                <Code2 size={36} className="mx-auto text-slate-500" />
-                <p className="text-sm text-slate-400">No GitHub projects found in this category.</p>
-              </div>
-            </div>
-          )}
-        </div>
-      )}
+      </div>
     </section>
   )
 }
